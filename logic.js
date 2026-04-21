@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function renderDashboard() {
+    // Links & Keys
     if (document.getElementById('oauthLink')) {
         document.getElementById('oauthLink').href = BOT_CONFIG.oauthUrl;
     }
@@ -19,27 +20,35 @@ function renderDashboard() {
     // Features rendern
     const featureContainer = document.getElementById('featureGrid');
     if (featureContainer) {
-        featureContainer.innerHTML = '';
-        BOT_CONFIG.features.forEach(f => {
-            featureContainer.innerHTML += `
-                <div class="feature-card">
-                    <div class="icon">${f.icon}</div>
-                    <h3>${f.title}</h3>
-                    <p>${f.desc}</p>
-                </div>
-            `;
-        });
+        featureContainer.innerHTML = BOT_CONFIG.features.map(f => `
+            <div class="feature-card">
+                <div class="icon">${f.icon}</div>
+                <h3>${f.title}</h3>
+                <p>${f.desc}</p>
+            </div>
+        `).join('');
+    }
+
+    // Commands rendern
+    const commandContainer = document.getElementById('commandList');
+    if (commandContainer) {
+        commandContainer.innerHTML = BOT_CONFIG.commands.map(c => `
+            <div class="command-item">
+                <span class="command-name">${c.name}</span>
+                <span class="command-desc">${c.desc}</span>
+            </div>
+        `).join('');
     }
 }
 
+// ... (checkPass, protectPage, logout bleiben gleich wie vorher)
 function checkPass() {
     const enteredPass = document.getElementById('passInput').value;
     if (enteredPass === BOT_CONFIG.password) {
         localStorage.setItem('bot_auth', 'true');
         window.location.href = 'dashboard.html';
     } else {
-        const err = document.getElementById('error');
-        if(err) err.style.display = 'block';
+        document.getElementById('error').style.display = 'block';
     }
 }
 
