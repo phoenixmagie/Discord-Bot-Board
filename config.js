@@ -1,6 +1,6 @@
 const BOT_CONFIG = {
     // Sicherheit
-    password: "dein-passwort", 
+    password: "VIP-System", 
     
     // Bot Informationen (ID ist öffentlich okay, Key ist privat/entfernt)
     clientId: "1461675860598718477",
