@@ -1,33 +1,18 @@
 const BOT_CONFIG = {
-    // Sicherheit
-    password: "VIP-System", 
-    
-    // Bot Informationen (ID ist öffentlich okay, Key ist privat/entfernt)
+    password: "dein-passwort", 
     clientId: "1461675860598718477",
     oauthUrl: "https://discord.com/oauth2/authorize?client_id=1461675860598718477&permissions=8&integration_type=0&scope=bot",
-    fileName: "VIP_SYSTEM",
+    fileName: "CLAN_DATA",
 
-    // Dashboard Features
     features: [
-        {
-            icon: "📊",
-            title: "Statistiken",
-            desc: "Tracke die Aktivität deiner Clan-Mitglieder in Echtzeit."
-        },
-        {
-            icon: "🛡️",
-            title: "Moderation",
-            desc: "Automatisierte Filter und Schutzsysteme für deinen Discord."
-        },
-        {
-            icon: "⚙️",
-            title: "Custom Config",
-            desc: "Einstellungen werden in der CLAN_DATA Datei verwaltet."
-        },
-        {
-            icon: "💰",
-            title: "Economy",
-            desc: "Ein Belohnungssystem für aktive Member."
-        }
+        { icon: "🧭", title: "Logs", desc: "Logge alle User Aktivitäten wie Nachrichten änderung, löschen und vieles mehr!" },
+        { icon: "🛡️", title: "Moderation", desc: "Moderationsbefehle für deinen Server." },
+{ icon: "🕹️", title: "Minigames", desc: "Minigames wie Counting und ein komplettes Economy System!" },
+{ icon: "🎫", title: "Tickets", desc: "Tickets für deinen Server." },
+    ],
+
+    // NEU: Deine Command-Liste
+    commands: [
+        { name: "/", desc: "" },
     ]
 };
