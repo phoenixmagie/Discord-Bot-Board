@@ -10,38 +10,27 @@
     <nav class="navbar">
         <div class="nav-content">
             <span class="brand">CONFIG BOT</span>
-            <button class="btn-logout" onclick="logout()">Logout</button>
+            <button class="btn-logout" onclick="logout()">Abmelden</button>
         </div>
     </nav>
 
-    <div class="dashboard-container">
+    <div id="dashboard" class="dashboard-container">
         <header class="hero">
             <h1>Power up your Server</h1>
-            <p>Verwalte deinen Clan effizient mit <strong>CLAN_DATA</strong> Integration.</p>
-            <a id="oauthLink" href="#" class="btn btn-hero">Bot hinzufügen</a>
+            <p>Konfiguriere deinen Bot effizient über dieses Dashboard.</p>
+            <a id="oauthLink" href="#" class="btn btn-hero">Bot jetzt einladen</a>
         </header>
 
-        <section class="features">
-            <div class="feature-card">
-                <div class="icon">📊</div>
-                <h3>Statistiken</h3>
-                <p>Tracke die Aktivität deiner Clan-Mitglieder in Echtzeit.</p>
-            </div>
-            <div class="feature-card">
-                <div class="icon">🛡️</div>
-                <h3>Moderation</h3>
-                <p>Automatisierte Filter und Schutzsysteme für deinen Discord.</p>
-            </div>
-            <div class="feature-card">
-                <div class="icon">⚙️</div>
-                <h3>Custom Config</h3>
-                <p>Alles wird in einer <code>Datenbank</code> gespeichert.</p>
-            </div>
-        </section>
+        <section class="features" id="featureGrid"></section>
         
         <div class="key-display">
-            <small>DEIN CLIENT KEY</small>
-            <code id="clientKeyDisplay"></code>
+            <small>SYSTEM STATUS</small>
+            <p style="color: #43b581; font-weight: bold; margin-top: 10px;">
+                ● Verbunden mit VIP-System
+            </p>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+                Sicherheitsmodus aktiv: Client Secrets sind verborgen.
+            </p>
         </div>
     </div>
 
