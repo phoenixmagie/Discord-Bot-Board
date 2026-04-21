@@ -3,37 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Config Dashboard</title>
+    <title>Login | Bot Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-
-    <div id="login" class="container">
-        <h2>Geschützter Bereich</h2>
-        <p class="info-text">Bitte gib das Passwort ein, um auf die Konfiguration zuzugreifen.</p>
-        <input type="password" id="passInput" placeholder="Passwort eingeben...">
-        <button class="btn" onclick="checkPass()">Anmelden</button>
-        <p id="error" class="error-msg">Zugriff verweigert.</p>
-    </div>
-
-    <div id="dashboard" class="container" style="display: none;">
-        <h2>Config</h2>
-        <p class="info-text">Bot-Verwaltung & Autorisierung</p>
-        
-        <div class="key-box">
-            <span class="label">Client Key:</span><br>
-            <span id="clientKeyDisplay"></span>
+<body class="login-page">
+    <div class="container login-card">
+        <div class="bot-logo">C</div>
+        <h2>Willkommen zurück!</h2>
+        <p class="info-text">Bitte autorisiere dich für den Zugriff.</p>
+        <div class="input-group">
+            <label>ADMIN PASSWORT</label>
+            <input type="password" id="passInput" autofocus>
         </div>
-
-        <a id="oauthLink" href="#" target="_blank" class="btn">
-           Bot hinzufügen
-        </a>
-        
-        <div class="footer">
-            <p id="configFileDisplay"></p>
-        </div>
+        <button class="btn full-width" onclick="checkPass()">Anmelden</button>
+        <p id="error" class="error-msg">Passwort inkorrekt.</p>
     </div>
-
     <script src="config.js"></script>
     <script src="logic.js"></script>
 </body>
