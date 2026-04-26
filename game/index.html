@@ -9,19 +9,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
 </head>
 <body class="phase-day">
-    <div id="landscape-warning">
-        <span>Bitte drehe dein Gerät ins Querformat (Landscape), um zu spielen.</span>
-    </div>
+    <div id="landscape-warning"><span>Bitte Gerät ins Querformat drehen!</span></div>
     
     <div id="ui-layer">
         <div id="top-bar">
-            <div id="timer-display">Phase: Warten...</div>
+            <div id="timer-display">Phase: Lädt...</div>
             <div id="role-badge">Rolle: -</div>
         </div>
+        
         <div id="action-menu" class="hidden">
-            <h3 id="action-title">Aktion wählen</h3>
+            <h3 id="action-title">Nacht-Aktion</h3>
             <div id="action-targets"></div>
-            <button id="btn-cancel-action">Abbrechen</button>
+            <button id="btn-close-action">Schließen</button>
         </div>
     </div>
 
@@ -31,7 +30,8 @@
         <div id="world">
             <div id="village-center"></div>
             <div id="entities">
-                </div>
+                <div id="player-me" class="player">Ich</div>
+            </div>
         </div>
     </div>
 
