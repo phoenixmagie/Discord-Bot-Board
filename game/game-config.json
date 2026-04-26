@@ -1,0 +1,24 @@
+{
+  "map": {
+    "size": 2000,
+    "spawn_point": { "x": 1000, "y": 1000 },
+    "village_radius": 150
+  },
+  "movement": {
+    "speed": 250,
+    "network_tick_rate": 100,
+    "joystick_threshold": 50
+  },
+  "roles": {
+    "werewolf": { "can_move_at_night": true, "vision_radius": 500 },
+    "girl": { "can_move_at_night": true, "vision_radius": 300 },
+    "villager": { "can_move_at_night": false, "vision_radius": 200 },
+    "seer": { "can_move_at_night": false, "has_action": true },
+    "witch": { "can_move_at_night": false, "has_action": true }
+  },
+  "timing": {
+    "day_duration": 300,
+    "night_duration": 120,
+    "teleport_speed": 0.5
+  }
+}
