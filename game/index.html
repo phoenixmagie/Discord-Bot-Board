@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Werewolf Open World</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+</head>
+<body>
+    <div id="landscape-warning">Bitte drehe dein Gerät ins Querformat!</div>
+    
+    <div id="game-container">
+        <div id="world">
+            <div id="village-square"></div>
+            <div id="entities"></div>
+        </div>
+        
+        <div id="ui-layer">
+            <div id="timer-display">Tag: 05:00</div>
+            <div id="role-badge">Rolle: Wartend...</div>
+            <div id="action-btn" class="hidden">AKTION</div>
+        </div>
+
+        <div id="joystick-zone"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
