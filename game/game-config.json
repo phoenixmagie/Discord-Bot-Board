@@ -10,15 +10,15 @@
     "joystick_threshold": 50
   },
   "roles": {
-    "werewolf": { "can_move_at_night": true, "vision_radius": 500 },
-    "girl": { "can_move_at_night": true, "vision_radius": 300 },
-    "villager": { "can_move_at_night": false, "vision_radius": 200 },
-    "seer": { "can_move_at_night": false, "has_action": true },
-    "witch": { "can_move_at_night": false, "has_action": true }
+    "werewolf": { "can_move_at_night": true, "vision_radius": 500, "color": "#8b0000" },
+    "girl": { "can_move_at_night": true, "vision_radius": 300, "color": "#ff69b4" },
+    "villager": { "can_move_at_night": false, "vision_radius": 200, "color": "#cccccc" },
+    "seer": { "can_move_at_night": false, "has_action": true, "color": "#4b0082" },
+    "witch": { "can_move_at_night": false, "has_action": true, "color": "#006400" },
+    "hunter": { "can_move_at_night": false, "color": "#444444" }
   },
   "timing": {
     "day_duration": 300,
-    "night_duration": 120,
-    "teleport_speed": 0.5
+    "night_duration": 120
   }
 }
