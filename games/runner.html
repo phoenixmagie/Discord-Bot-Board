@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Runner - Desktop & Mobile Edition</title>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; user-select: none; box-sizing: border-box; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; color: white; cursor: default; }
+        canvas { display: block; touch-action: none; }
+        
+        #hud { position: absolute; width: 100%; top: 20px; text-align: center; pointer-events: none; z-index: 10; }
+        #coinCount { position: absolute; top: 20px; left: 20px; color: #ff0; font-size: 1.5rem; font-weight: bold; }
+        
+        #pauseMenu { 
+            position: absolute; inset: 0; background: rgba(0,0,0,0.95); 
+            display: none; flex-direction: column; align-items: center; 
+            padding: 20px; overflow-y: auto; z-index: 100;
+        }
+        #pauseMenu.active { display: flex; }
+
+        .section-title { color: #0ff; margin: 25px 0 10px; font-weight: bold; border-bottom: 1px solid #333; width: 90%; }
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 400px; }
+        
+        .item-card { background: #111; padding: 10px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; border: 1px solid #333; }
+        .skin-preview { width: 40px; height: 40px; border-radius: 5px; margin-bottom: 5px; }
+        .active-skin { outline: 2px solid #fff; box-shadow: 0 0 10px #fff; }
+        
+        .btn-buy { border: none; padding: 6px; border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; font-size: 0.8rem; }
+        .price { font-size: 0.8rem; color: #ff0; margin: 2px 0; }
+
+        #powerTimer { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); width: 60%; height: 8px; background: #222; border-radius: 4px; display: none; }
+        #powerBar { height: 100%; width: 100%; background: #0ff; border-radius: 4px; }
+        
+        .controls-hint { position: absolute; bottom: 10px; width: 100%; text-align: center; color: #444; font-size: 0.7rem; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="coinCount">🪙 0</div>
+    <div id="hud">
+        <div id="score" style="font-size: 2.5rem; font-weight: bold; color: #0ff;">0</div>
+        <div id="highscore" style="color: #666; font-size: 0.8rem;">Highscore: 0</div>
+    </div>
+
+    <button onclick="togglePause()" style="position: absolute; top: 20px; right: 20px; z-index: 110; padding: 10px; background: #222; color: #fff; border: 1px solid #fff; border-radius: 5px; cursor: pointer;">SHOP (Esc)</button>
+
+    <div id="pauseMenu">
+        <h1 style="color: #0ff; margin-bottom: 5px;">UPGRADES & SKINS</h1>
+        
+        <div class="section-title">Power-Up Upgrades</div>
+        <div class="shop-grid" id="upgradeList"></div>
+
+        <div class="section-title">Skins</div>
+        <div class="shop-grid" id="skinList"></div>
+
+        <button onclick="togglePause()" style="margin: 30px 0; padding: 15px 60px; background: #0ff; border: none; border-radius: 30px; font-weight: bold; cursor: pointer;">SPIELEN</button>
+    </div>
+
+    <div id="powerTimer"><div id="powerBar"></div></div>
+    <div class="controls-hint">Steuerung: Pfeiltasten, A/D oder Maus-Klick</div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+
+        // Speicher laden
+        let coins = parseInt(localStorage.getItem('coins')) || 0;
+        let highscore = parseInt(localStorage.getItem('highscore')) || 0;
+        let unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins')) || ['#0ff'];
+        let playerColor = localStorage.getItem('selectedSkin') || '#0ff';
+        let upLevels = JSON.parse(localStorage.getItem('upLevels')) || { god: 5, mult: 5, mag: 5 };
+
+        let score = 0, speed = 7, currentLane = 1, isPaused = false, gameActive = true;
+        let entities = [], lanes = [canvas.width * 0.2, canvas.width * 0.5, canvas.width * 0.8];
+        let activePower = null, powerTimeLeft = 0, powerMax = 0;
+
+        const skins = [{c:'#0ff',p:0}, {c:'#f0f',p:50}, {c:'#0f0',p:150}, {c:'#ff0',p:300}, {c:'#fff',p:500}];
+
+        function initShop() {
+            document.getElementById('coinCount').innerText = "🪙 " + coins;
+            document.getElementById('highscore').innerText = "Highscore: " + highscore;
+            
+            const sList = document.getElementById('skinList');
+            sList.innerHTML = '';
+            skins.forEach(s => {
+                const isU = unlockedSkins.includes(s.c), isA = playerColor === s.c;
+                sList.innerHTML += `
+                    <div class="item-card">
+                        <div class="skin-preview ${isA?'active-skin':''}" style="background:${s.c}"></div>
+                        <div class="price">${isU?'BESITZT':'🪙 '+s.p}</div>
+                        <button class="btn-buy" onclick="handleSkin('${s.c}',${s.p})" style="background:${isU?(isA?'#444':'#0ff'):'#ff0'}">${isU?(isA?'AKTIV':'WÄHLEN'):'KAUFEN'}</button>
+                    </div>`;
+            });
+
+            const uList = document.getElementById('upgradeList');
+            uList.innerHTML = '';
+            const ups = [{id:'god', n:'God Mode', c:'#ff0'}, {id:'mult', n:'Multiplier', c:'#0f0'}, {id:'mag', n:'Magnet', c:'#0af'}];
+            ups.forEach(u => {
+                let cost = upLevels[u.id] * 10;
+                uList.innerHTML += `
+                    <div class="item-card">
+                        <div style="color:${u.c}; font-weight:bold; font-size:0.8rem;">${u.n}</div>
+                        <div style="font-size:0.7rem;">Dauer: ${upLevels[u.id]}s</div>
+                        <div class="price">🪙 ${cost}</div>
+                        <button class="btn-buy" onclick="handleUpgrade('${u.id}',${cost})" style="background:#ff0">UPGRADE</button>
+                    </div>`;
+            });
+        }
+
+        function handleSkin(c, p) {
+            if(unlockedSkins.includes(c)) { playerColor = c; localStorage.setItem('selectedSkin', c); }
+            else if(coins >= p) { coins -= p; unlockedSkins.push(c); playerColor = c; save(); }
+            initShop();
+        }
+
+        function handleUpgrade(id, cost) {
+            if(coins >= cost) { coins -= cost; upLevels[id] += 2; save(); initShop(); }
+        }
+
+        function save() {
+            localStorage.setItem('coins', coins);
+            localStorage.setItem('unlockedSkins', JSON.stringify(unlockedSkins));
+            localStorage.setItem('upLevels', JSON.stringify(upLevels));
+            localStorage.setItem('highscore', highscore);
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            document.getElementById('pauseMenu').classList.toggle('active', isPaused);
+            if(!isPaused) requestAnimationFrame(update); else initShop();
+        }
+
+        // --- STEUERUNG AKTUALISIERT ---
+        
+        // Maus-Steuerung
+        window.addEventListener('mousedown', e => {
+            if(isPaused || !gameActive || e.target.tagName === 'BUTTON') return;
+            movePlayer(e.clientX < canvas.width / 2 ? -1 : 1);
+        });
+
+        // Tastatur-Steuerung
+        window.addEventListener('keydown', e => {
+            if (e.key === 'Escape') togglePause();
+            if (isPaused || !gameActive) return;
+            
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') movePlayer(-1);
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') movePlayer(1);
+        });
+
+        // Touch-Unterstützung beibehalten
+        window.addEventListener('touchstart', e => {
+            if(isPaused || !gameActive || e.target.tagName === 'BUTTON') return;
+            movePlayer(e.touches[0].clientX < canvas.width / 2 ? -1 : 1);
+        });
+
+        function movePlayer(dir) {
+            if(dir === -1 && currentLane > 0) currentLane--;
+            else if(dir === 1 && currentLane < 2) currentLane++;
+        }
+
+        // ------------------------------
+
+        function spawn() {
+            if(isPaused || !gameActive) return setTimeout(spawn, 500);
+            let r = Math.random();
+            let lane = Math.floor(Math.random()*3);
+            if(r < 0.6) entities.push({x:lanes[lane]-30, y:-60, w:60, h:60, type:'obs'});
+            else if(r < 0.9) entities.push({x:lanes[lane]-15, y:-60, w:30, h:30, type:'coin'});
+            else {
+                let pTypes = ['p_god', 'p_mult', 'p_mag'];
+                entities.push({x:lanes[lane]-20, y:-60, w:40, h:40, type: pTypes[Math.floor(Math.random()*3)]});
+            }
+            setTimeout(spawn, Math.max(300, 900 - score * 2));
+        }
+
+        function update() {
+            if(isPaused || !gameActive) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if(activePower) {
+                powerTimeLeft -= 0.016;
+                document.getElementById('powerBar').style.width = (powerTimeLeft/powerMax)*100+"%";
+                if(powerTimeLeft <= 0) { activePower = null; document.getElementById('powerTimer').style.display = 'none'; }
+            }
+
+            const px = lanes[currentLane]-30;
+            ctx.shadowBlur = 15; ctx.shadowColor = playerColor; ctx.fillStyle = playerColor;
+            if(activePower === 'god') ctx.globalAlpha = 0.5;
+            ctx.fillRect(px, canvas.height - 150, 60, 80); ctx.globalAlpha = 1;
+
+            for(let i = entities.length-1; i >= 0; i--) {
+                let e = entities[i]; e.y += speed;
+                
+                if(activePower === 'mag' && (e.type === 'coin')) {
+                    e.x += (lanes[currentLane] - (e.x+15)) * 0.15;
+                }
+
+                if(e.type === 'obs') {
+                    ctx.fillStyle = '#f05'; ctx.shadowColor = '#f05'; ctx.fillRect(e.x, e.y, e.w, e.h);
+                    if(activePower !== 'god' && e.y+e.h > canvas.height-150 && e.y < canvas.height-70 && Math.abs((e.x+30)-lanes[currentLane]) < 25) {
+                        gameActive = false; if(score > highscore) highscore = score; save();
+                        alert("Crash! Score: " + score); location.reload();
+                    }
+                } else {
+                    ctx.fillStyle = (e.type === 'coin') ? '#ff0' : (e.type === 'p_god' ? '#ff0' : (e.type === 'p_mult' ? '#0f0' : '#0af'));
+                    ctx.beginPath(); ctx.arc(e.x+e.w/2, e.y+e.h/2, e.w/2, 0, 7); ctx.fill();
+                    if(e.y+e.h > canvas.height-150 && e.y < canvas.height-70 && Math.abs((e.x+e.w/2)-lanes[currentLane]) < 30) {
+                        if(e.type === 'coin') { coins += (activePower === 'mult' ? 2 : 1); }
+                        else {
+                            activePower = e.type.split('_')[1];
+                            powerMax = upLevels[activePower]; powerTimeLeft = powerMax;
+                            document.getElementById('powerTimer').style.display = 'block';
+                            document.getElementById('powerBar').style.background = ctx.fillStyle;
+                        }
+                        entities.splice(i, 1); save(); document.getElementById('coinCount').innerText = "🪙 " + coins; continue;
+                    }
+                }
+                if(e.y > canvas.height) { 
+                    if(e.type === 'obs') { score += (activePower === 'mult' ? 2 : 1); speed += 0.02; document.getElementById('score').innerText = score; }
+                    entities.splice(i, 1); 
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        initShop(); spawn(); update();
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, duration, type = 'square') {
+            if (isPaused || !gameActive) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function musicLoop() {
+            if (!isPaused && gameActive) {
+                const notes = [110, 110, 164, 110, 130, 110, 146, 123];
+                const now = Date.now() / 150;
+                const note = notes[Math.floor(now % notes.length)];
+                playTone(note, 0.1);
+            }
+            setTimeout(musicLoop, 150);
+        }
+
+        window.addEventListener('mousedown', () => { if (audioCtx.state === 'suspended') audioCtx.resume(); }, {once: true});
+        musicLoop();
+    </script>
+</body>
+</html>
