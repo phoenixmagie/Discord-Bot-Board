@@ -3,27 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Werewolf Open World</title>
+    <title>Werewolf: Düsterwald Open World</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
 </head>
-<body>
-    <div id="landscape-warning">Bitte drehe dein Gerät ins Querformat!</div>
+<body class="phase-day">
+    <div id="landscape-warning">
+        <span>Bitte drehe dein Gerät ins Querformat (Landscape), um zu spielen.</span>
+    </div>
     
-    <div id="game-container">
-        <div id="world">
-            <div id="village-square"></div>
-            <div id="entities"></div>
+    <div id="ui-layer">
+        <div id="top-bar">
+            <div id="timer-display">Phase: Warten...</div>
+            <div id="role-badge">Rolle: -</div>
         </div>
-        
-        <div id="ui-layer">
-            <div id="timer-display">Tag: 05:00</div>
-            <div id="role-badge">Rolle: Wartend...</div>
-            <div id="action-btn" class="hidden">AKTION</div>
+        <div id="action-menu" class="hidden">
+            <h3 id="action-title">Aktion wählen</h3>
+            <div id="action-targets"></div>
+            <button id="btn-cancel-action">Abbrechen</button>
         </div>
+    </div>
 
-        <div id="joystick-zone"></div>
+    <div id="joystick-zone"></div>
+
+    <div id="viewport">
+        <div id="world">
+            <div id="village-center"></div>
+            <div id="entities">
+                </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
