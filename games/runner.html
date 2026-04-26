@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Runner - Desktop & Mobile Edition</title>
+    <title>Neon Runner - Ultimate Edition</title>
     <script src="https://unpkg.com/@discord/embedded-app-sdk"></script>
     <style>
         * { -webkit-tap-highlight-color: transparent; user-select: none; box-sizing: border-box; }
-        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; color: white; cursor: default; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
         canvas { display: block; touch-action: none; }
-
+        
         #hud { position: absolute; width: 100%; top: 20px; text-align: center; pointer-events: none; z-index: 10; }
         #coinCount { position: absolute; top: 20px; left: 20px; color: #ff0; font-size: 1.5rem; font-weight: bold; }
-
+        
         #pauseMenu { 
             position: absolute; inset: 0; background: rgba(0,0,0,0.95); 
             display: none; flex-direction: column; align-items: center; 
@@ -22,18 +22,18 @@
 
         .section-title { color: #0ff; margin: 25px 0 10px; font-weight: bold; border-bottom: 1px solid #333; width: 90%; }
         .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 400px; }
-
+        
         .item-card { background: #111; padding: 10px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; border: 1px solid #333; }
         .skin-preview { width: 40px; height: 40px; border-radius: 5px; margin-bottom: 5px; }
         .active-skin { outline: 2px solid #fff; box-shadow: 0 0 10px #fff; }
-
+        
         .btn-buy { border: none; padding: 6px; border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; font-size: 0.8rem; }
         .price { font-size: 0.8rem; color: #ff0; margin: 2px 0; }
 
         #powerTimer { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); width: 60%; height: 8px; background: #222; border-radius: 4px; display: none; }
         #powerBar { height: 100%; width: 100%; background: #0ff; border-radius: 4px; }
-
-        .controls-hint { position: absolute; bottom: 10px; width: 100%; text-align: center; color: #444; font-size: 0.7rem; pointer-events: none; }
+        
+        .hint { position: absolute; bottom: 10px; width: 100%; text-align: center; color: #444; font-size: 0.7rem; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -44,11 +44,11 @@
         <div id="highscore" style="color: #666; font-size: 0.8rem;">Highscore: 0</div>
     </div>
 
-    <button onclick="togglePause()" style="position: absolute; top: 20px; right: 20px; z-index: 110; padding: 10px; background: #222; color: #fff; border: 1px solid #fff; border-radius: 5px; cursor: pointer;">SHOP (Esc)</button>
+    <button onclick="togglePause()" style="position: absolute; top: 20px; right: 20px; z-index: 110; padding: 10px; background: #222; color: #fff; border: 1px solid #fff; border-radius: 5px; cursor: pointer;">SHOP</button>
 
     <div id="pauseMenu">
         <h1 style="color: #0ff; margin-bottom: 5px;">UPGRADES & SKINS</h1>
-
+        
         <div class="section-title">Power-Up Upgrades</div>
         <div class="shop-grid" id="upgradeList"></div>
 
@@ -59,7 +59,7 @@
     </div>
 
     <div id="powerTimer"><div id="powerBar"></div></div>
-    <div class="controls-hint">Steuerung: Pfeiltasten, A/D oder Maus-Klick</div>
+    <div class="hint">Tippen: Steuern | Doppeltippen: Shop</div>
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -67,7 +67,6 @@
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-        // Speicher laden
         let coins = parseInt(localStorage.getItem('coins')) || 0;
         let highscore = parseInt(localStorage.getItem('highscore')) || 0;
         let unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins')) || ['#0ff'];
@@ -80,34 +79,33 @@
 
         const skins = [{c:'#0ff',p:0}, {c:'#f0f',p:50}, {c:'#0f0',p:150}, {c:'#ff0',p:300}, {c:'#fff',p:500}];
 
+        // Discord SDK
+        const discordSdk = window.discordSdk ? new window.discordSdk.DiscordSDK("1461675860598718477") : null;
+
+        async function setupDiscord() {
+            if (!discordSdk) return;
+            try {
+                await discordSdk.ready();
+                await discordSdk.commands.authorize({
+                    client_id: "1461675860598718477",
+                    response_type: "code", state: "", prompt: "none", scope: ["identify", "guilds"],
+                });
+            } catch (e) { console.error(e); }
+        }
+
         function initShop() {
             document.getElementById('coinCount').innerText = "🪙 " + coins;
             document.getElementById('highscore').innerText = "Highscore: " + highscore;
-
-            const sList = document.getElementById('skinList');
-            sList.innerHTML = '';
+            const sList = document.getElementById('skinList'); sList.innerHTML = '';
             skins.forEach(s => {
                 const isU = unlockedSkins.includes(s.c), isA = playerColor === s.c;
-                sList.innerHTML += `
-                    <div class="item-card">
-                        <div class="skin-preview ${isA?'active-skin':''}" style="background:${s.c}"></div>
-                        <div class="price">${isU?'BESITZT':'🪙 '+s.p}</div>
-                        <button class="btn-buy" onclick="handleSkin('${s.c}',${s.p})" style="background:${isU?(isA?'#444':'#0ff'):'#ff0'}">${isU?(isA?'AKTIV':'WÄHLEN'):'KAUFEN'}</button>
-                    </div>`;
+                sList.innerHTML += `<div class="item-card"><div class="skin-preview ${isA?'active-skin':''}" style="background:${s.c}"></div><div class="price">${isU?'BESITZT':'🪙 '+s.p}</div><button class="btn-buy" onclick="handleSkin('${s.c}',${s.p})" style="background:${isU?(isA?'#444':'#0ff'):'#ff0'}">${isU?(isA?'AKTIV':'WÄHLEN'):'KAUFEN'}</button></div>`;
             });
-
-            const uList = document.getElementById('upgradeList');
-            uList.innerHTML = '';
+            const uList = document.getElementById('upgradeList'); uList.innerHTML = '';
             const ups = [{id:'god', n:'God Mode', c:'#ff0'}, {id:'mult', n:'Multiplier', c:'#0f0'}, {id:'mag', n:'Magnet', c:'#0af'}];
             ups.forEach(u => {
                 let cost = upLevels[u.id] * 10;
-                uList.innerHTML += `
-                    <div class="item-card">
-                        <div style="color:${u.c}; font-weight:bold; font-size:0.8rem;">${u.n}</div>
-                        <div style="font-size:0.7rem;">Dauer: ${upLevels[u.id]}s</div>
-                        <div class="price">🪙 ${cost}</div>
-                        <button class="btn-buy" onclick="handleUpgrade('${u.id}',${cost})" style="background:#ff0">UPGRADE</button>
-                    </div>`;
+                uList.innerHTML += `<div class="item-card"><div style="color:${u.c}; font-weight:bold; font-size:0.8rem;">${u.n}</div><div style="font-size:0.7rem;">Dauer: ${upLevels[u.id]}s</div><div class="price">🪙 ${cost}</div><button class="btn-buy" onclick="handleUpgrade('${u.id}',${cost})" style="background:#ff0">UPGRADE</button></div>`;
             });
         }
 
@@ -126,9 +124,6 @@
             localStorage.setItem('unlockedSkins', JSON.stringify(unlockedSkins));
             localStorage.setItem('upLevels', JSON.stringify(upLevels));
             localStorage.setItem('highscore', highscore);
-            
-            // Discord Status Update Trigger
-            updateDiscordPresence();
         }
 
         function togglePause() {
@@ -137,28 +132,42 @@
             if(!isPaused) requestAnimationFrame(update); else initShop();
         }
 
-        // --- STEUERUNG ---
-        window.addEventListener('mousedown', e => {
-            if(isPaused || !gameActive || e.target.tagName === 'BUTTON') return;
-            movePlayer(e.clientX < canvas.width / 2 ? -1 : 1);
-        });
-
-        window.addEventListener('keydown', e => {
-            if (e.key === 'Escape') togglePause();
-            if (isPaused || !gameActive) return;
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') movePlayer(-1);
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') movePlayer(1);
-        });
-
+        // --- STEUERUNG (KLICK & DOPPELKLICK) ---
+        let lastTap = 0;
         window.addEventListener('touchstart', e => {
-            if(isPaused || !gameActive || e.target.tagName === 'BUTTON') return;
-            movePlayer(e.touches[0].clientX < canvas.width / 2 ? -1 : 1);
+            if (e.target.tagName === 'BUTTON') return;
+            
+            const now = Date.now();
+            const TIMESPAN = 300; // Millisekunden für Doppelklick-Erkennung
+            
+            if (now - lastTap < TIMESPAN) {
+                // DOPPELKLICK ERKANNT
+                togglePause();
+                lastTap = 0; // Zurücksetzen
+            } else {
+                // EINFACHER KLICK
+                if (!isPaused && gameActive) {
+                    e.touches[0].clientX < canvas.width/2 ? (currentLane > 0 && currentLane--) : (currentLane < 2 && currentLane++);
+                }
+                lastTap = now;
+            }
         });
 
-        function movePlayer(dir) {
-            if(dir === -1 && currentLane > 0) currentLane--;
-            else if(dir === 1 && currentLane < 2) currentLane++;
-        }
+        // Desktop Unterstützung für Doppelklick
+        window.addEventListener('mousedown', e => {
+            if (e.target.tagName === 'BUTTON') return;
+            // Native dblclick wird oft durch preventDefault gestört, daher manuelle Logik:
+            const now = Date.now();
+            if (now - lastTap < 300) {
+                togglePause();
+                lastTap = 0;
+            } else {
+                if (!isPaused && gameActive) {
+                    e.clientX < canvas.width/2 ? (currentLane > 0 && currentLane--) : (currentLane < 2 && currentLane++);
+                }
+                lastTap = now;
+            }
+        });
 
         function spawn() {
             if(isPaused || !gameActive) return setTimeout(spawn, 500);
@@ -176,13 +185,11 @@
         function update() {
             if(isPaused || !gameActive) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             if(activePower) {
                 powerTimeLeft -= 0.016;
                 document.getElementById('powerBar').style.width = (powerTimeLeft/powerMax)*100+"%";
                 if(powerTimeLeft <= 0) { activePower = null; document.getElementById('powerTimer').style.display = 'none'; }
             }
-
             const px = lanes[currentLane]-30;
             ctx.shadowBlur = 15; ctx.shadowColor = playerColor; ctx.fillStyle = playerColor;
             if(activePower === 'god') ctx.globalAlpha = 0.5;
@@ -190,11 +197,7 @@
 
             for(let i = entities.length-1; i >= 0; i--) {
                 let e = entities[i]; e.y += speed;
-
-                if(activePower === 'mag' && (e.type === 'coin')) {
-                    e.x += (lanes[currentLane] - (e.x+15)) * 0.15;
-                }
-
+                if(activePower === 'mag' && (e.type === 'coin')) e.x += (lanes[currentLane] - (e.x+15)) * 0.15;
                 if(e.type === 'obs') {
                     ctx.fillStyle = '#f05'; ctx.shadowColor = '#f05'; ctx.fillRect(e.x, e.y, e.w, e.h);
                     if(activePower !== 'god' && e.y+e.h > canvas.height-150 && e.y < canvas.height-70 && Math.abs((e.x+30)-lanes[currentLane]) < 25) {
@@ -223,21 +226,17 @@
             requestAnimationFrame(update);
         }
 
-        initShop(); spawn(); update();
+        initShop(); spawn(); update(); setupDiscord();
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playTone(freq, duration, type = 'square') {
             if (isPaused || !gameActive) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
             gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
 
         function musicLoop() {
@@ -250,33 +249,8 @@
             setTimeout(musicLoop, 150);
         }
 
-        window.addEventListener('mousedown', () => { if (audioCtx.state === 'suspended') audioCtx.resume(); }, {once: true});
+        window.addEventListener('touchstart', () => { if (audioCtx.state === 'suspended') audioCtx.resume(); }, {once: true});
         musicLoop();
-
-        // --- DISCORD ACTIVITY LOGIC ---
-        const discordSdk = window.discordSdk ? new window.discordSdk.DiscordSDK("1461675860598718477") : null;
-
-        async function initDiscord() {
-            if (!discordSdk) return;
-            try {
-                await discordSdk.ready();
-                console.log("Discord SDK ready");
-                await discordSdk.commands.authorize({
-                    client_id: "1461675860598718477",
-                    response_type: "code",
-                    state: "",
-                    prompt: "none",
-                    scope: ["identify", "guilds"],
-                });
-            } catch (e) { console.error("Discord Auth Error", e); }
-        }
-
-        function updateDiscordPresence() {
-            if (!discordSdk) return;
-            // Hier könnten Status-Updates folgen, sofern die App-Konfiguration dies zulässt
-        }
-
-        initDiscord();
     </script>
 </body>
 </html>
