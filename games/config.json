@@ -1,0 +1,14 @@
+{
+    "clientId": "DEINE_APPLICATION_ID_HIER",
+    "activity": {
+        "state": "Playing Phoenix",
+        "details": "YAFRnaYP5seBJ9I5BQ4ATQQ9szcK38fo",
+        "largeImageKey": "1498222409709391902",
+        "largeImageText": "Numbani",
+        "smallImageKey": "potion",
+        "smallImageText": "...",
+        "partyId": "ae488379-351d-4a4f-ad32-2b9b01c91657",
+        "partySize": [1, 15],
+        "joinSecret": "MTI4NzM0OjFpMmhuZToxMjMxMjM="
+    }
+}
