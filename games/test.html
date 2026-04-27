@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Clan Activity Display</title>
+    <style>
+        body { background-color: #36393f; color: white; font-family: 'Helvetica Neue', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .activity-box { background: #2f3136; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid #4f545c; width: 300px; text-align: center; }
+        .status-text { font-weight: bold; color: #ffffff; margin: 10px 0 5px 0; }
+        .detail-text { color: #b9bbbe; font-size: 14px; margin-bottom: 15px; }
+        .badge { background: #7289da; padding: 5px 10px; border-radius: 15px; font-size: 12px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <div class="activity-box">
+        <div class="badge" id="party-info">Lade Party...</div>
+        <div class="status-text" id="state-display">Inaktiv</div>
+        <div class="detail-text" id="details-display">-</div>
+        <div id="level-display" style="font-size: 12px; color: #8e9297;"></div>
+    </div>
+
+    <script type="module">
+        import { DiscordSDK } from "https://esm.run/@discord/embedded-app-sdk";
+
+        // Hier deine Application ID eintragen
+        const CLIENT_ID = "DEINE_APPLICATION_ID_HIER";
+        const discordSdk = new DiscordSDK(CLIENT_ID);
+
+        async function updatePresence() {
+            try {
+                await discordSdk.ready();
+
+                // Simulation der CLAN_DATA Logik
+                const clanData = {
+                    state: "Playing Solo",
+                    details: "Competitive",
+                    largeImageText: "Numbani",
+                    smallImageText: "Rogue - Level 100",
+                    partyId: "ae488379-351d-4a4f-ad32-2b9b01c91657",
+                    partySize: 1,
+                    partyMax: 5,
+                    joinSecret: "MTI4NzM0OjFpMmhuZToxMjMxMjM="
+                };
+
+                // UI im Browser aktualisieren
+                document.getElementById('state-display').innerText = clanData.state;
+                document.getElementById('details-display').innerText = clanData.details;
+                document.getElementById('party-info').innerText = `${clanData.partySize} / ${clanData.partyMax} Spieler`;
+                document.getElementById('level-display').innerText = clanData.smallImageText;
+
+                // Das eigentliche Discord Update (Activity)
+                await discordSdk.commands.setActivity({
+                    activity: {
+                        state: clanData.state,
+                        details: clanData.details,
+                        assets: {
+                            large_image: "phoenix", // Muss im Developer Portal hochgeladen sein
+                            large_text: clanData.largeImageText,
+                            small_text: clanData.smallImageText
+                        },
+                        party: {
+                            id: clanData.partyId,
+                            size: [clanData.partySize, clanData.partyMax]
+                        },
+                        secrets: {
+                            join: clanData.joinSecret
+                        },
+                        timestamps: {
+                            // In JS nutzen wir Millisekunden, dein C-Wert war Sekunden
+                            start: 1507665886 
+                        }
+                    }
+                });
+
+                console.log("Activity erfolgreich an Discord übertragen!");
+            } catch (err) {
+                console.error("Activity konnte nicht gesetzt werden:", err);
+            }
+        }
+
+        updatePresence();
+    </script>
+</body>
+</html>
