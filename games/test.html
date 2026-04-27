@@ -9,114 +9,146 @@
         body {
             background-color: #23272a;
             color: #ffffff;
-            font-family: 'gg sans', sans-serif;
+            font-family: 'gg sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
+            overflow: hidden;
         }
         .card {
             background-color: #2b2d31;
-            padding: 30px;
-            border-radius: 15px;
+            padding: 40px;
+            border-radius: 20px;
             border: 2px solid #5865f2;
             text-align: center;
-            min-width: 300px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 400px;
+            width: 90%;
         }
-        #status-text { color: #fee75c; margin-top: 10px; }
-        .success { color: #57f287 !important; }
-        .error { color: #ed4245 !important; }
+        h1 {
+            color: #5865f2;
+            margin-top: 0;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #fee75c;
+            font-weight: bold;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #5865f2;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h1 style="color: #5865f2;">Phoenix System</h1>
-        <p id="status-text">Starte Phoenix-Modul...</p>
+        <h1>Phoenix System</h1>
+        <div id="loader-icon" class="loader"></div>
+        <p id="status">Verbinde mit Discord Schnittstelle...</p>
     </div>
 
     <script type="module">
-        // Wir nutzen das globale discordSdk Objekt direkt von der unpkg Quelle
+        // Das SDK wird über das globale Objekt window.discordSdk geladen
         const { DiscordSDK } = window.discordSdk;
 
-        // DEINE DATEN DIREKT HIER (Keine config.json mehr nötig)
+        // DEINE KONFIGURATION
         const CONFIG = {
             clientId: "1461675860598718477",
             activity: {
                 state: "Playing Phoenix",
                 details: "YAFRnaYP5seBJ9I5BQ4ATQQ9szcK38fo",
-                largeImageKey: "1498222409709391902",
-                largeImageText: "Numbani",
-                smallImageKey: "potion",
-                smallImageText: "...",
-                partyId: "ae488379-351d-4a4f-ad32-2b9b01c91657",
-                partySize: [1, 15],
-                joinSecret: "MTI4NzM0OjFpMmhuZToxMjMxMjM="
-            }
+                largeImageKey: "1498222409709391902", // Muss im Dev-Portal hochgeladen sein
+                largeImageText: "Numbani"
+            },
+            redirectUri: "https://phoenix-pnx.vercel.app/games/test.html"
         };
 
-        const statusEl = document.getElementById('status-text');
+        async function startPhoenix() {
+            const statusEl = document.getElementById('status');
+            const loaderEl = document.getElementById('loader-icon');
 
-        async function initPhoenix() {
             try {
-                // 1. SDK Initialisieren
+                // 1. SDK Initialisierung
                 const sdk = new DiscordSDK(CONFIG.clientId);
-                statusEl.innerText = "Verbindung zu Discord wird aufgebaut...";
-                
                 await sdk.ready();
-                statusEl.innerText = "Warte auf Autorisierung...";
+                
+                statusEl.innerText = "Autorisierung wird angefordert...";
 
-                // 2. OAuth2 Authorize
+                // 2. OAuth2 Autorisierung mit all deinen Scopes
                 const { code } = await sdk.commands.authorize({
                     client_id: CONFIG.clientId,
                     response_type: 'code',
                     state: '',
                     prompt: 'none',
-                    scope: ['activities.write'],
-                    redirect_uri: 'https://phoenix-pnx.vercel.app/games/test.html'
+                    scope: [
+                        'identify',
+                        'identify.premium',
+                        'rpc',
+                        'applications.commands',
+                        'activities.write',
+                        'activities.read',
+                        'activities.invites.write',
+                        'openid'
+                    ],
+                    redirect_uri: CONFIG.redirectUri
                 });
 
-                if (!code) throw new Error("Autorisierung vom Nutzer abgelehnt.");
+                if (!code) {
+                    throw new Error("Autorisierung fehlgeschlagen oder abgebrochen.");
+                }
 
-                // 3. Zeit für 10.000 Stunden berechnen
-                const startTime = Math.floor(Date.now() / 1000) - (10000 * 60 * 60);
+                // 3. Zeitstempel für 10.000 Stunden berechnen
+                // (10000 Stunden * 60 Minuten * 60 Sekunden)
+                const tenThousandHoursInSeconds = 10000 * 3600;
+                const startTime = Math.floor(Date.now() / 1000) - tenThousandHoursInSeconds;
 
-                // 4. Status im Profil setzen
+                // 4. Den Rich Presence Status setzen
                 await sdk.commands.setActivity({
                     activity: {
                         state: CONFIG.activity.state,
                         details: CONFIG.activity.details,
-                        timestamps: { start: startTime },
+                        timestamps: {
+                            start: startTime
+                        },
                         assets: {
                             large_image: CONFIG.activity.largeImageKey,
-                            large_text: CONFIG.activity.largeImageText,
-                            small_image: CONFIG.activity.smallImageKey,
-                            small_text: CONFIG.activity.smallImageText
-                        },
-                        party: {
-                            id: CONFIG.activity.partyId,
-                            size: CONFIG.activity.partySize
-                        },
-                        secrets: {
-                            join: CONFIG.activity.joinSecret
+                            large_text: CONFIG.activity.largeImageText
                         },
                         instance: true
                     }
                 });
 
-                statusEl.innerText = "Status aktiv! Phoenix läuft.";
-                statusEl.classList.add('success');
+                // Erfolgmeldung
+                loaderEl.style.display = "none";
+                statusEl.innerText = "Phoenix Status ist jetzt AKTIV!";
+                statusEl.style.color = "#57f287";
 
             } catch (err) {
-                console.error("Phoenix Error:", err);
+                console.error("Phoenix System Fehler:", err);
+                loaderEl.style.display = "none";
                 statusEl.innerText = "Fehler: " + err.message;
-                statusEl.classList.add('error');
+                statusEl.style.color = "#ed4245";
             }
         }
 
-        // Starte die App
-        initPhoenix();
+        // Start der Anwendung
+        startPhoenix();
     </script>
 </body>
 </html>
