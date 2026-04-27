@@ -3,83 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phoenix Activity</title>
+    <title>Phoenix Test Activity</title>
     <script src="https://unpkg.com/@discord/embedded-app-sdk"></script>
     <style>
         body {
             background-color: #23272a;
             color: #ffffff;
-            font-family: 'gg sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
         }
-        .card {
+        .status-card {
             background-color: #2b2d31;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #5865f2;
             text-align: center;
-            border: 1px solid #5865f2;
         }
-        h1 { color: #5865f2; margin-bottom: 0.5rem; }
-        #status-text { color: #b5bac1; font-size: 0.9rem; }
-        .loader { color: #fee75c; font-weight: bold; }
+        .active-status { color: #57f287; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="card">
+    <div class="status-card">
         <h1>Phoenix System</h1>
-        <p id="status-text">Initialisiere Verbindung...</p>
+        <p id="msg">Verbinde mit Discord SDK...</p>
     </div>
 
     <script type="module">
-        // Importiere das SDK als Modul
         import { DiscordSDK } from "https://unpkg.com/@discord/embedded-app-sdk/dist/index.js";
 
-        let discordSdk;
-
-        async function startPhoenixActivity() {
-            const statusEl = document.getElementById('status-text');
+        async function startActivity() {
+            const msgEl = document.getElementById('msg');
 
             try {
-                // 1. Lade die Konfiguration
-                const configResponse = await fetch('./config.json');
-                if (!configResponse.ok) throw new Error("config.json konnte nicht geladen werden.");
-                const config = await configResponse.json();
+                // 1. Config laden
+                const response = await fetch('./config.json');
+                const config = await response.json();
 
-                // 2. SDK Initialisierung
-                discordSdk = new DiscordSDK(config.clientId);
+                // 2. SDK Setup
+                const discordSdk = new DiscordSDK(config.clientId);
                 await discordSdk.ready();
-                statusEl.innerText = "Authentifizierung gestartet...";
 
-                // 3. OAuth2 Authorize (öffnet das Discord-Fenster für activities.write)
-                // Hinweis: redirect_uri muss im Developer Portal hinterlegt sein!
+                // 3. OAuth2 Authorize mit deiner spezifischen Redirect URI
                 const { code } = await discordSdk.commands.authorize({
                     client_id: config.clientId,
                     response_type: 'code',
                     state: '',
                     prompt: 'none',
                     scope: ['activities.write'],
+                    // Die von dir angegebene Redirect URI
+                    redirect_uri: 'https://phoenix-pnx.vercel.app/games/test.html'
                 });
 
-                if (!code) throw new Error("Authentifizierung fehlgeschlagen.");
+                if (!code) {
+                    throw new Error("Kein Auth-Code erhalten.");
+                }
 
-                // 4. Presence setzen (Das "Playing"-Gefühl)
-                // Berechnung für die 10.000 Stunden Anzeige
-                const tenThousandHoursInSeconds = 10000 * 60 * 60;
-                const startTime = Math.floor(Date.now() / 1000) - tenThousandHoursInSeconds;
+                // 4. Zeitberechnung für 10.000 Stunden
+                const tenThousandHoursInSec = 10000 * 60 * 60;
+                const startTime = Math.floor(Date.now() / 1000) - tenThousandHoursInSec;
 
+                // 5. Presence setzen
                 await discordSdk.commands.setActivity({
                     activity: {
                         state: config.activity.state,
                         details: config.activity.details,
-                        timestamps: {
-                            start: startTime
-                        },
+                        timestamps: { start: startTime },
                         assets: {
                             large_image: config.activity.largeImageKey,
                             large_text: config.activity.largeImageText,
@@ -97,16 +90,15 @@
                     }
                 });
 
-                statusEl.innerHTML = '<span style="color: #57f287;">Aktiv! Phoenix wird im Profil angezeigt.</span>';
+                msgEl.innerHTML = '<span class="active-status">Phoenix Status aktiv!</span><br>Schau in dein Discord Profil.';
 
-            } catch (error) {
-                console.error(error);
-                statusEl.innerHTML = '<span style="color: #ed4245;">Fehler: ' + error.message + '</span>';
+            } catch (err) {
+                console.error(err);
+                msgEl.innerHTML = '<span style="color: #ed4245;">Fehler: ' + err.message + '</span>';
             }
         }
 
-        // Startet den Prozess
-        startPhoenixActivity();
+        startActivity();
     </script>
 </body>
 </html>
